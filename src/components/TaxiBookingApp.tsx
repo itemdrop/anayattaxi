@@ -359,7 +359,7 @@ export function TaxiBookingApp() {
           <Car className="h-10 w-10 text-yellow-400" />
           <h1 className="text-5xl font-bold text-yellow-400 drop-shadow-lg">🚕 AnayaTaxi</h1>
         </div>
-        <p className="text-black text-xl font-semibold bg-yellow-400 rounded-full px-6 py-2 inline-block shadow-lg border-2 border-black">Your Professional Taxi Service</p>
+        <p className="text-black text-2xl font-bold bg-yellow-400 rounded-full px-8 py-3 inline-block shadow-lg border-2 border-black">AnayaTaxi</p>
       </header>
 
       {/* Main Content */}
@@ -739,7 +739,7 @@ export function TaxiBookingApp() {
       {/* Footer */}
       <footer className="text-center mt-8">
         <div className="bg-black rounded-2xl px-6 py-4 inline-block shadow-2xl border-2 border-yellow-400">
-          <p className="text-yellow-400 font-bold">🚕 &copy; 2025 AnayaTaxi - Your Professional Taxi Service. All rights reserved.</p>
+          <p className="text-yellow-400 font-bold">🚕 &copy; 2025 AnayaTaxi. All rights reserved.</p>
         </div>
       </footer>
     </div>
