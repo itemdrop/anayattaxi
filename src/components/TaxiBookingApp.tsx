@@ -227,52 +227,65 @@ export function TaxiBookingApp() {
   // Handle map click to alternate between pickup and dropoff locations
   const handleMapClick = async (lat: number, lng: number) => {
     try {
-      console.log(`Map clicked at: ${lat}, ${lng} - Setting ${nextLocationSetting}`);
+      console.log(`🗺️ Map clicked at: ${lat}, ${lng}`);
+      console.log(`🎯 Current nextLocationSetting: ${nextLocationSetting}`);
       
       const isSettingPickup = nextLocationSetting === 'pickup';
       const fieldName = isSettingPickup ? 'pickupAddress' : 'dropoffAddress';
-      const markerTitle = isSettingPickup ? 'Pickup Location' : 'Dropoff Location';
+      const markerTitle = isSettingPickup ? '🚕 Pickup Location' : '🏁 Dropoff Location';
       const markerType = nextLocationSetting;
       
-      // Show loading state
+      console.log(`📝 Setting field: ${fieldName}`);
+      console.log(`📍 Marker type: ${markerType}`);
+      
+      // Show loading state immediately
       setValue(fieldName, '🔍 Getting address...');
       
       // Get address from coordinates using free geocoding
-      const address = await FreeLocationService.getAddressFromCoords(lat, lng);
+      let address: string;
+      try {
+        address = await FreeLocationService.getAddressFromCoords(lat, lng);
+        console.log(`✅ Address resolved: ${address}`);
+      } catch (geocodingError) {
+        console.error('Geocoding failed, using coordinates:', geocodingError);
+        address = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
       
       // Update the address field
       setValue(fieldName, address);
+      console.log(`📋 Form field '${fieldName}' updated with: ${address}`);
       
-      // Add marker to map - keep current location, replace pickup/dropoff as needed
+      // Create new marker
       const newMarker = {
         lat,
         lng,
         title: markerTitle,
-        type: markerType as 'pickup' | 'dropoff'
+        type: markerType as 'pickup' | 'dropoff' | 'current'
       };
       
       // Update markers - keep current location, replace the specific type being set
-      setMapMarkers(prev => [
-        ...prev.filter(marker => marker.type !== markerType && marker.type !== 'demo'),
-        newMarker
-      ]);
+      setMapMarkers(prev => {
+        const filteredMarkers = prev.filter(marker => 
+          marker.type !== markerType && marker.type !== 'demo'
+        );
+        console.log(`🗺️ Adding marker of type '${markerType}' to map`);
+        return [...filteredMarkers, newMarker];
+      });
       
-      // Always switch to next location type after setting one
-      if (isSettingPickup) {
-        setNextLocationSetting('dropoff');
-      } else {
-        // After dropoff is set, cycle back to pickup for next booking
-        setNextLocationSetting('pickup');
-      }
+      // Switch to next location type
+      const newNextSetting = isSettingPickup ? 'dropoff' : 'pickup';
+      setNextLocationSetting(newNextSetting);
+      console.log(`🔄 Switched nextLocationSetting to: ${newNextSetting}`);
       
-      console.log(`${isSettingPickup ? 'Pickup' : 'Dropoff'} address set:`, address);
     } catch (error) {
-      console.error('Failed to get address from map click:', error);
+      console.error('❌ Map click handler failed:', error);
       const fieldName = nextLocationSetting === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
-      setValue(fieldName, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      setValue(fieldName, `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
       
-      // Still switch to next location even if geocoding fails
-      setNextLocationSetting(nextLocationSetting === 'pickup' ? 'dropoff' : 'pickup');
+      // Still switch to next location even if everything fails
+      const newNextSetting = nextLocationSetting === 'pickup' ? 'dropoff' : 'pickup';
+      setNextLocationSetting(newNextSetting);
+      console.log(`🔄 Error recovery: switched to ${newNextSetting}`);
     }
   };
 

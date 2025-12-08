@@ -49,6 +49,7 @@ const FreeMap: React.FC<FreeMapProps> = ({
       // Add click handler for location selection
       if (onLocationSelect) {
         map.on('click', (e: any) => {
+          console.log('🗺️ FreeMap: Click detected at', e.latlng.lat, e.latlng.lng);
           onLocationSelect(e.latlng.lat, e.latlng.lng);
         });
       }
