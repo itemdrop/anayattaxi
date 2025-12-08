@@ -89,8 +89,8 @@ export function TaxiBookingApp() {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
-          timeout: 15000, // Increased timeout
-          maximumAge: 60000, // 1 minute cache
+          timeout: 30000, // Longer timeout for better reliability
+          maximumAge: 300000, // 5 minute cache for faster subsequent loads
         });
       });
 
@@ -195,14 +195,12 @@ export function TaxiBookingApp() {
     }
   };
 
-  // Auto-get location on component mount (free maps load instantly!)
+  // Auto-get location on component mount - immediate for better UX
   useEffect(() => {
-    // Small delay to ensure component is mounted
-    const timer = setTimeout(() => {
+    // Get location immediately when component mounts
+    if (typeof window !== 'undefined' && navigator.geolocation) {
       getCurrentLocation();
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    }
   }, []);
 
 
@@ -233,7 +231,7 @@ export function TaxiBookingApp() {
       
       const isSettingPickup = nextLocationSetting === 'pickup';
       const fieldName = isSettingPickup ? 'pickupAddress' : 'dropoffAddress';
-      const markerTitle = isSettingPickup ? 'Selected Pickup Location' : 'Selected Dropoff Location';
+      const markerTitle = isSettingPickup ? 'Pickup Location' : 'Dropoff Location';
       const markerType = nextLocationSetting;
       
       // Show loading state
@@ -245,28 +243,36 @@ export function TaxiBookingApp() {
       // Update the address field
       setValue(fieldName, address);
       
-      // Add marker to map
+      // Add marker to map - keep current location, replace pickup/dropoff as needed
       const newMarker = {
         lat,
         lng,
         title: markerTitle,
-        type: markerType
+        type: markerType as 'pickup' | 'dropoff'
       };
       
-      // Update markers - keep current location and demo, replace the specific type
+      // Update markers - keep current location, replace the specific type being set
       setMapMarkers(prev => [
-        ...prev.filter(marker => marker.type !== markerType),
+        ...prev.filter(marker => marker.type !== markerType && marker.type !== 'demo'),
         newMarker
       ]);
       
-      // Switch to next location type
-      setNextLocationSetting(isSettingPickup ? 'dropoff' : 'pickup');
+      // Always switch to next location type after setting one
+      if (isSettingPickup) {
+        setNextLocationSetting('dropoff');
+      } else {
+        // After dropoff is set, cycle back to pickup for next booking
+        setNextLocationSetting('pickup');
+      }
       
       console.log(`${isSettingPickup ? 'Pickup' : 'Dropoff'} address set:`, address);
     } catch (error) {
       console.error('Failed to get address from map click:', error);
       const fieldName = nextLocationSetting === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
       setValue(fieldName, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      
+      // Still switch to next location even if geocoding fails
+      setNextLocationSetting(nextLocationSetting === 'pickup' ? 'dropoff' : 'pickup');
     }
   };
 
@@ -355,11 +361,9 @@ export function TaxiBookingApp() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <header className="text-center mb-8">
-        <div className="inline-flex items-center gap-3 mb-4 bg-black rounded-2xl px-6 py-4 shadow-2xl">
-          <Car className="h-10 w-10 text-yellow-400" />
-          <h1 className="text-5xl font-bold text-yellow-400 drop-shadow-lg">🚕 AnayaTaxi</h1>
-        </div>
-        <p className="text-black text-2xl font-bold bg-yellow-400 rounded-full px-8 py-3 inline-block shadow-lg border-2 border-black">AnayaTaxi</p>
+        <h1 className="text-6xl font-bold text-black bg-yellow-400 rounded-2xl px-8 py-4 inline-block shadow-2xl border-4 border-black">
+          🚕 AnayaTaxi
+        </h1>
       </header>
 
       {/* Main Content */}
@@ -464,20 +468,11 @@ export function TaxiBookingApp() {
                 </button>
                 
                 <button
-                  onClick={setDemoLocation}
+                  onClick={resetLocationSelection}
                   className="flex items-center gap-2 bg-black hover:bg-gray-800 text-yellow-400 px-6 py-3 rounded-lg text-sm font-bold transition-all border-2 border-yellow-400 shadow-lg hover:shadow-xl"
                 >
-                  🎭 Use Demo Location
+                  🔄 Reset Locations
                 </button>
-                
-                {!currentLocation && (
-                  <button
-                    onClick={() => setLocationError('')}
-                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Skip for Now
-                  </button>
-                )}
               </div>
               
               {!currentLocation && !locationError && (
