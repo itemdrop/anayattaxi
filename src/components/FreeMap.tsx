@@ -27,7 +27,6 @@ const FreeMap: React.FC<FreeMapProps> = ({
     // Dynamically import Leaflet only on client
     const initializeMap = async () => {
       const L = (await import('leaflet')).default;
-      // CSS is already imported in _app or layout
 
       // Fix Leaflet's default markers
       delete (L.Icon.Default.prototype as any)._getIconUrl;
