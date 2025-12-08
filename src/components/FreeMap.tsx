@@ -1,19 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-
-interface FreeMapProps {
-  center?: [number, number];
-  zoom?: number;
-  onLocationSelect?: (lat: number, lng: number) => void;
-  markers?: Array<{
-    lat: number;
-    lng: number;
-    title?: string;
-    type?: 'pickup' | 'dropoff' | 'current' | 'demo' | 'destination';
-  }>;
-  className?: string;
-}
+import { FreeMapProps } from '../types';
 
 const FreeMap: React.FC<FreeMapProps> = ({
   center = [40.7128, -74.0060], // Default to NYC

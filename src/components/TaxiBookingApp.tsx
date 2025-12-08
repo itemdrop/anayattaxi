@@ -6,6 +6,12 @@ import FreeMap from './FreeMap';
 import '../styles/leaflet-fixes.css';
 import { FreeLocationService } from '../utils/FreeLocationService';
 import { useForm } from 'react-hook-form';
+import { 
+  LocationData, 
+  MapMarker, 
+  LocationSettingType, 
+  SubmitStatus 
+} from '../types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
@@ -40,27 +46,16 @@ const bookingSchema = z.object({
 
 type BookingFormData = z.infer<typeof bookingSchema>;
 
-interface LocationData {
-  lat: number;
-  lng: number;
-  address: string;
-}
-
 export function TaxiBookingApp() {
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [locationError, setLocationError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
   const [mapCenter, setMapCenter] = useState<[number, number]>([37.7749, -122.4194]);
   const [mapZoom, setMapZoom] = useState(13);
-  const [mapMarkers, setMapMarkers] = useState<Array<{
-    lat: number;
-    lng: number;
-    title: string;
-    type: 'current' | 'demo' | 'destination' | 'pickup' | 'dropoff';
-  }>>([]);
-  const [nextLocationSetting, setNextLocationSetting] = useState<'pickup' | 'dropoff'>('pickup');
+  const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
+  const [nextLocationSetting, setNextLocationSetting] = useState<LocationSettingType>('pickup');
 
   const {
     register,

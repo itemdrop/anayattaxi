@@ -3,7 +3,23 @@ const nextConfig = {
   // Optimized for Vercel deployment
   output: 'standalone',
   images: {
-    domains: ['tile.openstreetmap.org', 'nominatim.openstreetmap.org']
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.tile.openstreetmap.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'nominatim.openstreetmap.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdnjs.cloudflare.com',
+      }
+    ]
+  },
+  turbopack: {
+    root: '/Users/efan/anayattaxi'
   },
   experimental: {
     optimizePackageImports: ['leaflet']
