@@ -26,15 +26,16 @@ const FreeMap: React.FC<FreeMapProps> = ({
 
     // Dynamically import Leaflet only on client
     const initializeMap = async () => {
-      const L = (await import('leaflet')).default;
+      try {
+        const L = (await import('leaflet')).default;
 
-      // Fix Leaflet's default markers
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      });
+        // Fix Leaflet's default markers
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
 
       // Create map instance
       const map = L.map(mapRef.current!).setView(center, zoom);
@@ -52,10 +53,13 @@ const FreeMap: React.FC<FreeMapProps> = ({
         });
       }
 
-      mapInstanceRef.current = { map, L };
+        mapInstanceRef.current = { map, L };
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+      }
     };
 
-    initializeMap().catch(console.error);
+    initializeMap();
 
     return () => {
       if (mapInstanceRef.current?.map) {
@@ -134,7 +138,7 @@ const FreeMap: React.FC<FreeMapProps> = ({
 
   if (!isClient) {
     return (
-      <div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+      <div className={`${className} bg-gray-100 flex items-center justify-center`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
           <p className="text-gray-600">Loading FREE map...</p>
@@ -147,7 +151,12 @@ const FreeMap: React.FC<FreeMapProps> = ({
     <div 
       ref={mapRef} 
       className={className}
-      style={{ minHeight: '400px' }}
+      style={{ 
+        minHeight: '400px',
+        height: '400px',
+        position: 'relative',
+        zIndex: 1
+      }}
     />
   );
 };

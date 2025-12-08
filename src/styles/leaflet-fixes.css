@@ -1,7 +1,24 @@
-/* Leaflet CSS fixes for Next.js */
+/* Leaflet CSS fixes for Next.js and Vercel deployment */
 .leaflet-container {
-  height: 100%;
-  width: 100%;
+  height: 100% !important;
+  width: 100% !important;
+  z-index: 1;
+}
+
+.leaflet-pane {
+  z-index: auto;
+}
+
+.leaflet-tile-pane {
+  z-index: 1;
+}
+
+.leaflet-marker-pane {
+  z-index: 6;
+}
+
+.leaflet-popup-pane {
+  z-index: 7;
 }
 
 .leaflet-control-attribution {
