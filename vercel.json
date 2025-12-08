@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "name": "anayattaxi",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_EMAILJS_USER_ID": "@emailjs_user_id",
+    "NEXT_PUBLIC_EMAILJS_SERVICE_ID": "@emailjs_service_id", 
+    "NEXT_PUBLIC_EMAILJS_TEMPLATE_ID": "@emailjs_template_id",
+    "NEXT_PUBLIC_EMAILJS_ADMIN_TEMPLATE_ID": "@emailjs_admin_template_id",
+    "NEXT_PUBLIC_ADMIN_EMAIL": "@admin_email"
+  }
+}
