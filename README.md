@@ -4,43 +4,47 @@ A modern, full-featured taxi booking application built with Next.js, featuring a
 
 ## ✨ Features
 
-- **📍 Accurate Location Services**: Real-time GPS location with Google Maps integration
-- **📧 Gmail Integration**: Automatic booking confirmations sent via email
+- **📍 100% FREE GPS Location**: Real-time GPS location with HTML5 Geolocation API (no API costs)
+- **🗺️ FREE Interactive Maps**: Leaflet with OpenStreetMap integration (no API keys required)
+- **📧 Gmail Integration**: Automatic booking confirmations sent via EmailJS
 - **📱 Responsive Design**: Works perfectly on mobile, tablet, and desktop
-- **🗺️ Interactive Maps**: Google Maps integration with location markers
-- **📝 Smart Forms**: Form validation with real-time feedback
+- **📝 Smart Forms**: Form validation with real-time feedback and Zod validation
 - **🚗 Multiple Car Types**: Economy, Comfort, Premium, and SUV options
 - **⏰ Date & Time Picker**: Easy scheduling for future rides
 - **📊 Booking Management**: Complete booking details and confirmation system
+- **🆓 Zero API Costs**: Completely free location and mapping services
 
 ## 🛠️ Setup Instructions
 
-### 1. Configure API Keys
+### 1. Configure Email Integration (Optional)
 
-Edit the `.env.local` file and add your API keys:
+Edit the `.env.local` file and add your EmailJS configuration for email notifications:
 
 ```env
-# Google Maps API Key (Required)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key
-
-# EmailJS Configuration (Required)
+# EmailJS Configuration (Optional - for email notifications)
 NEXT_PUBLIC_EMAILJS_USER_ID=your_emailjs_user_id
 NEXT_PUBLIC_EMAILJS_SERVICE_ID=your_emailjs_service_id
 NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=your_emailjs_template_id
 NEXT_PUBLIC_EMAILJS_ADMIN_TEMPLATE_ID=your_admin_template_id
 
+# Note: No Google Maps API key needed! 🎉
+# We use free OpenStreetMap and HTML5 Geolocation
+
 # Admin Email
 NEXT_PUBLIC_ADMIN_EMAIL=your_admin_email@gmail.com
 ```
 
-### 2. Google Maps API Setup
+### 2. 🆓 FREE Maps & GPS Implementation
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable these APIs: Maps JavaScript API, Geocoding API, Places API
-4. Create an API Key and copy it to `.env.local`
+**No setup required!** The app uses:
+- **HTML5 Geolocation API** for GPS location (built into browsers)
+- **OpenStreetMap** for map tiles (completely free)
+- **Leaflet** for interactive maps (open source)
+- **Nominatim API** for address geocoding (free OpenStreetMap service)
 
-### 3. EmailJS Setup
+Zero API costs, no registration needed! 🎉
+
+### 3. EmailJS Setup (Optional)
 
 1. Sign up at [EmailJS](https://www.emailjs.com/)
 2. Create a Gmail service

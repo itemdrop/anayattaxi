@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
 import emailjs from '@emailjs/browser';
+import FreeMap from './FreeMap';
+import '../styles/leaflet-fixes.css';
+import { FreeLocationService } from '../utils/FreeLocationService';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,10 +52,15 @@ export function TaxiBookingApp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const loaderRef = useRef<Loader | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([37.7749, -122.4194]);
+  const [mapZoom, setMapZoom] = useState(13);
+  const [mapMarkers, setMapMarkers] = useState<Array<{
+    lat: number;
+    lng: number;
+    title: string;
+    type: 'current' | 'demo' | 'destination' | 'pickup' | 'dropoff';
+  }>>([]);
+  const [nextLocationSetting, setNextLocationSetting] = useState<'pickup' | 'dropoff'>('pickup');
 
   const {
     register,
@@ -71,54 +78,8 @@ export function TaxiBookingApp() {
     }
   });
 
-  // Initialize Map Placeholder (Google Maps can be added later with proper API key)
-  useEffect(() => {
-    if (mapRef.current) {
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      
-      if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY' || apiKey === 'your_google_maps_api_key_here') {
-        // Show placeholder
-        mapRef.current.innerHTML = `
-          <div class="flex items-center justify-center h-full bg-gradient-to-br from-blue-100 to-purple-100 border-2 border-dashed border-blue-300 rounded-lg">
-            <div class="text-center p-6">
-              <div class="text-4xl mb-3">🗺️</div>
-              <p class="text-blue-700 text-sm font-medium mb-2">Interactive Map Preview</p>
-              <p class="text-blue-600 text-xs mb-3">Add Google Maps API key to enable full functionality</p>
-              <div class="bg-white rounded-lg p-3 text-xs text-gray-600">
-                <div class="flex items-center justify-between mb-1">
-                  <span>📍 Current Demo Area:</span>
-                  <span class="font-medium">San Francisco, CA</span>
-                </div>
-                <div class="text-gray-400">GPS and live mapping available with API key</div>
-              </div>
-            </div>
-          </div>
-        `;
-      } else {
-        // If API key exists, load actual Google Maps
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initGoogleMap&libraries=places,geometry`;
-        script.async = true;
-        script.defer = true;
-        
-        (window as any).initGoogleMap = () => {
-          if (mapRef.current && window.google) {
-            const mapInstance = new window.google.maps.Map(mapRef.current, {
-              center: { lat: 37.7749, lng: -122.4194 },
-              zoom: 13,
-              styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }],
-              mapTypeControl: false,
-              streetViewControl: false,
-              fullscreenControl: false,
-            });
-            setMap(mapInstance);
-          }
-        };
-        
-        document.head.appendChild(script);
-      }
-    }
-  }, []);
+  // Map is now handled by the FreeMap component - no initialization needed!
+  // Free OpenStreetMap with Leaflet - zero cost, no API keys required
 
   // Get user's current location with improved error handling
   const getCurrentLocation = async () => {
@@ -158,14 +119,29 @@ export function TaxiBookingApp() {
           }
         }
         
-        // Method 2: Fallback to browser's reverse geocoding
-        if (!address && 'geolocation' in navigator) {
-          address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        // Method 2: FREE OpenStreetMap reverse geocoding (no API key needed!)
+        if (!address) {
+          try {
+            const osmResponse = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+              {
+                headers: {
+                  'User-Agent': 'AnayaTaxi-App'
+                }
+              }
+            );
+            const osmData = await osmResponse.json();
+            if (osmData && osmData.display_name) {
+              address = osmData.display_name;
+            }
+          } catch (osmError) {
+            console.warn('Free OSM geocoding failed:', osmError);
+          }
         }
         
-        // Method 3: Last fallback - use coordinates
+        // Method 3: Coordinate fallback
         if (!address) {
-          address = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
+          address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
         }
         
       } catch (geocodeError) {
@@ -183,25 +159,17 @@ export function TaxiBookingApp() {
       setLocationError('');
       console.log('Location data set:', locationData);
 
-      // Update map center and add marker if map is available
-      if (map && window.google) {
-        const newCenter = { lat: latitude, lng: longitude };
-        map.setCenter(newCenter);
-        map.setZoom(16);
-
-        // Clear existing markers
-        markers.forEach(marker => marker.setMap(null));
-
-        // Add new marker
-        const marker = new window.google.maps.Marker({
-          position: newCenter,
-          map,
-          title: 'Your Current Location',
-          icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-        });
-
-        setMarkers([marker]);
-      }
+      // Update free map center and add marker
+      setMapCenter([latitude, longitude]);
+      setMapZoom(16);
+      
+      // Add marker to free map
+      setMapMarkers([{
+        lat: latitude,
+        lng: longitude,
+        title: 'Your Current Location',
+        type: 'current'
+      }]);
       
       console.log('Location set with address:', address);
       
@@ -232,34 +200,78 @@ export function TaxiBookingApp() {
     }
   };
 
-  // Auto-get location on component mount with delay for map to load
+  // Auto-get location on component mount (free maps load instantly!)
   useEffect(() => {
-    if (map) {
-      // Small delay to ensure map is fully rendered
-      const timer = setTimeout(() => {
-        getCurrentLocation();
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [map]);
-
-  // Also try to get location on initial page load
-  useEffect(() => {
-    // Try to get location even without map for address field
-    const initialLocationTimer = setTimeout(() => {
-      if (!currentLocation) {
-        getCurrentLocation();
-      }
-    }, 2000);
+    // Small delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      getCurrentLocation();
+    }, 1000);
     
-    return () => clearTimeout(initialLocationTimer);
+    return () => clearTimeout(timer);
   }, []);
+
+
 
   // Use current location for pickup
   const useCurrentLocationForPickup = () => {
     if (currentLocation) {
       setValue('pickupAddress', currentLocation.address);
+    }
+  };
+
+  // Reset location selection order
+  const resetLocationSelection = () => {
+    setNextLocationSetting('pickup');
+    // Remove pickup and dropoff markers
+    setMapMarkers(prev => prev.filter(marker => 
+      marker.type !== 'pickup' && marker.type !== 'dropoff'
+    ));
+    // Clear address fields
+    setValue('pickupAddress', '');
+    setValue('dropoffAddress', '');
+  };
+
+  // Handle map click to alternate between pickup and dropoff locations
+  const handleMapClick = async (lat: number, lng: number) => {
+    try {
+      console.log(`Map clicked at: ${lat}, ${lng} - Setting ${nextLocationSetting}`);
+      
+      const isSettingPickup = nextLocationSetting === 'pickup';
+      const fieldName = isSettingPickup ? 'pickupAddress' : 'dropoffAddress';
+      const markerTitle = isSettingPickup ? 'Selected Pickup Location' : 'Selected Dropoff Location';
+      const markerType = nextLocationSetting;
+      
+      // Show loading state
+      setValue(fieldName, '🔍 Getting address...');
+      
+      // Get address from coordinates using free geocoding
+      const address = await FreeLocationService.getAddressFromCoords(lat, lng);
+      
+      // Update the address field
+      setValue(fieldName, address);
+      
+      // Add marker to map
+      const newMarker = {
+        lat,
+        lng,
+        title: markerTitle,
+        type: markerType
+      };
+      
+      // Update markers - keep current location and demo, replace the specific type
+      setMapMarkers(prev => [
+        ...prev.filter(marker => marker.type !== markerType),
+        newMarker
+      ]);
+      
+      // Switch to next location type
+      setNextLocationSetting(isSettingPickup ? 'dropoff' : 'pickup');
+      
+      console.log(`${isSettingPickup ? 'Pickup' : 'Dropoff'} address set:`, address);
+    } catch (error) {
+      console.error('Failed to get address from map click:', error);
+      const fieldName = nextLocationSetting === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
+      setValue(fieldName, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     }
   };
 
@@ -273,23 +285,17 @@ export function TaxiBookingApp() {
     setCurrentLocation(demoLocation);
     setLocationError('');
     
-    if (map && window.google) {
-      map.setCenter({ lat: demoLocation.lat, lng: demoLocation.lng });
-      map.setZoom(15);
-      
-      // Clear existing markers
-      markers.forEach(marker => marker.setMap(null));
-      
-      // Add demo marker
-      const marker = new window.google.maps.Marker({
-        position: { lat: demoLocation.lat, lng: demoLocation.lng },
-        map,
-        title: 'Demo Location',
-        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-      });
-      
-      setMarkers([marker]);
-    }
+    // Update free map with demo location
+    setMapCenter([demoLocation.lat, demoLocation.lng]);
+    setMapZoom(15);
+    
+    // Add demo marker to free map
+    setMapMarkers([{
+      lat: demoLocation.lat,
+      lng: demoLocation.lng,
+      title: 'Demo Location - San Francisco',
+      type: 'demo'
+    }]);
     
     console.log('Demo location set:', demoLocation.address);
   };
@@ -366,17 +372,53 @@ export function TaxiBookingApp() {
         <div className="grid lg:grid-cols-2 min-h-[700px]">
           {/* Map Section */}
           <div className="bg-gray-50 p-8 border-r border-gray-200">
-            {/* Map Container */}
-            <div 
-              ref={mapRef} 
-              className="w-full h-80 rounded-2xl border-2 border-gray-200 mb-6"
-            />
+            {/* Free Map Container - No API keys needed! */}
+            <div className="mb-6">
+              <FreeMap 
+                center={mapCenter}
+                zoom={mapZoom}
+                markers={mapMarkers}
+                className="w-full h-80 rounded-2xl border-2 border-gray-200"
+                onLocationSelect={handleMapClick}
+              />
+              <div className="text-sm text-gray-600 mt-2 text-center">
+                <p className="mb-2">
+                  💡 <strong>Tip:</strong> Click on the map to set locations in order
+                </p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    nextLocationSetting === 'pickup' 
+                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-300' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {nextLocationSetting === 'pickup' ? '👆 Next:' : '✓'} 🚗 Pickup
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    nextLocationSetting === 'dropoff' 
+                      ? 'bg-red-100 text-red-700 border-2 border-red-300' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {nextLocationSetting === 'dropoff' ? '👆 Next:' : '✓'} 🎯 Dropoff
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetLocationSelection}
+                  className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-full transition-colors"
+                >
+                  🔄 Reset Map Selection
+                </button>
+              </div>
+            </div>
 
             {/* Location Info */}
             <div className="bg-white p-6 rounded-2xl shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <MapPin className="h-5 w-5 text-blue-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Current Location</h3>
+                <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
+                  🆓 FREE GPS
+                </span>
               </div>
               
               {locationError ? (
@@ -509,13 +551,20 @@ export function TaxiBookingApp() {
               <div>
                 <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                   <MapPin className="h-4 w-4" />
-                  Pickup Location *
+                  Pickup Location * 
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    nextLocationSetting === 'pickup'
+                      ? 'bg-blue-100 text-blue-700 animate-pulse'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    🗺️ {nextLocationSetting === 'pickup' ? 'Click map to select' : 'Set via map'}
+                  </span>
                 </label>
                 <div className="flex gap-2">
                   <input
                     {...register('pickupAddress')}
                     className="flex-1 p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                    placeholder="Enter pickup address or use current location"
+                    placeholder="Enter address, use GPS, or click map first"
                   />
                   <button
                     type="button"
@@ -544,13 +593,20 @@ export function TaxiBookingApp() {
 
               <div>
                 <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                  <MapPin className="h-4 w-4" />
+                  <Navigation className="h-4 w-4" />
                   Drop-off Location *
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    nextLocationSetting === 'dropoff'
+                      ? 'bg-red-100 text-red-700 animate-pulse'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    🗺️ {nextLocationSetting === 'dropoff' ? 'Click map to select' : 'Click map after pickup'}
+                  </span>
                 </label>
                 <input
                   {...register('dropoffAddress')}
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="Enter destination address"
+                  placeholder="Enter destination or click on map after pickup"
                 />
                 {errors.dropoffAddress && (
                   <p className="text-red-500 text-sm mt-1">{errors.dropoffAddress.message}</p>

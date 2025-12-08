@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     
     // Create a nodemailer transporter (alternative to EmailJS)
     // You can use this if you prefer server-side email handling
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.GMAIL_USER,
