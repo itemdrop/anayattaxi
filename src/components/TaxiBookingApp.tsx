@@ -355,45 +355,49 @@ export function TaxiBookingApp() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <header className="text-center mb-8">
-        <div className="inline-flex items-center gap-3 mb-4">
-          <Car className="h-8 w-8 text-white" />
-          <h1 className="text-4xl font-bold text-white">AnayaTaxi</h1>
+        <div className="inline-flex items-center gap-3 mb-4 bg-black rounded-2xl px-6 py-4 shadow-2xl">
+          <Car className="h-10 w-10 text-yellow-400" />
+          <h1 className="text-5xl font-bold text-yellow-400 drop-shadow-lg">🚕 AnayaTaxi</h1>
         </div>
-        <p className="text-blue-100 text-lg">Your reliable ride partner</p>
+        <p className="text-black text-xl font-semibold bg-yellow-400 rounded-full px-6 py-2 inline-block shadow-lg border-2 border-black">Your Professional Taxi Service</p>
       </header>
 
       {/* Main Content */}
-      <main className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <main className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-black">
         <div className="grid lg:grid-cols-2 min-h-[700px]">
           {/* Map Section */}
-          <div className="bg-gray-50 p-8 border-r border-gray-200">
+          <div className="bg-yellow-50 p-8 border-r-4 border-black">
             {/* Free Map Container - No API keys needed! */}
             <div className="mb-6">
+              <h2 className="text-2xl font-bold text-black mb-4 flex items-center">
+                <MapPin className="w-6 h-6 mr-2 text-yellow-600" />
+                🗺️ Interactive Taxi Map
+              </h2>
               <FreeMap 
                 center={mapCenter}
                 zoom={mapZoom}
                 markers={mapMarkers}
-                className="w-full h-80 rounded-2xl border-2 border-gray-200"
+                className="w-full h-80 rounded-2xl border-4 border-yellow-400 shadow-xl"
                 onLocationSelect={handleMapClick}
               />
-              <div className="text-sm text-gray-600 mt-2 text-center">
-                <p className="mb-2">
-                  💡 <strong>Tip:</strong> Click on the map to set locations in order
+              <div className="text-sm text-black mt-4 text-center bg-yellow-100 p-4 rounded-xl border-2 border-yellow-400">
+                <p className="mb-3 font-semibold text-lg">
+                  🚕 <strong>Professional Tip:</strong> Click on the map to set locations in order
                 </p>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
                     nextLocationSetting === 'pickup' 
-                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-300' 
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-yellow-400 text-black border-2 border-black animate-pulse' 
+                      : 'bg-green-400 text-black border-2 border-green-600'
                   }`}>
-                    {nextLocationSetting === 'pickup' ? '👆 Next:' : '✓'} 🚗 Pickup
+                    {nextLocationSetting === 'pickup' ? '👆 NEXT:' : '✅'} 🚗 PICKUP
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg ${
                     nextLocationSetting === 'dropoff' 
-                      ? 'bg-red-100 text-red-700 border-2 border-red-300' 
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-yellow-400 text-black border-2 border-black animate-pulse' 
+                      : 'bg-green-400 text-black border-2 border-green-600'
                   }`}>
-                    {nextLocationSetting === 'dropoff' ? '👆 Next:' : '✓'} 🎯 Dropoff
+                    {nextLocationSetting === 'dropoff' ? '👆 NEXT:' : '✅'} 🎯 DROPOFF
                   </span>
                 </div>
                 <button
@@ -443,9 +447,9 @@ export function TaxiBookingApp() {
                 </div>
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-2 text-blue-800">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <p className="text-sm">Detecting your location...</p>
+                  <div className="flex items-center gap-2 text-black bg-yellow-200 p-3 rounded-lg border border-yellow-400">
+                    <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+                    <p className="text-sm font-semibold">🚕 Detecting your location...</p>
                   </div>
                 </div>
               )}
@@ -453,15 +457,15 @@ export function TaxiBookingApp() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={getCurrentLocation}
-                  className="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-3 rounded-lg text-sm font-bold transition-all border-2 border-black shadow-lg hover:shadow-xl"
                 >
                   <Navigation className="h-4 w-4" />
-                  {currentLocation ? 'Refresh Location' : 'Get My Location'}
+                  📍 {currentLocation ? 'Refresh Location' : 'Get My Location'}
                 </button>
                 
                 <button
                   onClick={setDemoLocation}
-                  className="flex items-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  className="flex items-center gap-2 bg-black hover:bg-gray-800 text-yellow-400 px-6 py-3 rounded-lg text-sm font-bold transition-all border-2 border-yellow-400 shadow-lg hover:shadow-xl"
                 >
                   🎭 Use Demo Location
                 </button>
@@ -477,10 +481,10 @@ export function TaxiBookingApp() {
               </div>
               
               {!currentLocation && !locationError && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-xs text-yellow-800">
-                    💡 <strong>Tip:</strong> Enable location services for automatic address detection, 
-                    or you can enter your pickup address manually in the form.
+                <div className="mt-4 p-4 bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-yellow-400 rounded-lg shadow-lg">
+                  <p className="text-sm text-black font-semibold">
+                    🚕 <strong>Professional Tip:</strong> Enable location services for automatic address detection, 
+                    or you can enter your pickup address manually in the booking form.
                   </p>
                 </div>
               )}
@@ -488,21 +492,23 @@ export function TaxiBookingApp() {
           </div>
 
           {/* Booking Form */}
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Book Your Taxi</h2>
+          <div className="p-8 bg-gradient-to-b from-yellow-50 to-white">
+            <h2 className="text-3xl font-bold text-black mb-6 text-center bg-yellow-400 py-3 px-6 rounded-xl border-2 border-black shadow-lg">
+              🚕 Book Your Professional Taxi
+            </h2>
             
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Personal Information */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                    <User className="h-4 w-4" />
-                    Full Name *
+                  <label className="flex items-center gap-2 text-black font-bold mb-3">
+                    <User className="h-5 w-5 text-yellow-600" />
+                    🗃️ Full Name *
                   </label>
                   <input
                     {...register('passengerName')}
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                    placeholder="Enter your full name"
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                    placeholder="🗃️ Enter your full name"
                   />
                   {errors.passengerName && (
                     <p className="text-red-500 text-sm mt-1">{errors.passengerName.message}</p>
@@ -510,15 +516,15 @@ export function TaxiBookingApp() {
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                    <Phone className="h-4 w-4" />
-                    Phone Number *
+                  <label className="flex items-center gap-2 text-black font-bold mb-3">
+                    <Phone className="h-5 w-5 text-yellow-600" />
+                    📞 Phone Number *
                   </label>
                   <input
                     {...register('passengerPhone')}
                     type="tel"
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                    placeholder="Enter your phone number"
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                    placeholder="📞 Enter your phone number"
                   />
                   {errors.passengerPhone && (
                     <p className="text-red-500 text-sm mt-1">{errors.passengerPhone.message}</p>
@@ -527,15 +533,15 @@ export function TaxiBookingApp() {
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                  <Mail className="h-4 w-4" />
-                  Email Address *
+                <label className="flex items-center gap-2 text-black font-bold mb-3">
+                  <Mail className="h-5 w-5 text-yellow-600" />
+                  📧 Email Address *
                 </label>
                 <input
                   {...register('passengerEmail')}
                   type="email"
-                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="Enter your email address"
+                  className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                  placeholder="📧 Enter your email address"
                 />
                 {errors.passengerEmail && (
                   <p className="text-red-500 text-sm mt-1">{errors.passengerEmail.message}</p>
@@ -544,31 +550,31 @@ export function TaxiBookingApp() {
 
               {/* Location Information */}
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                  <MapPin className="h-4 w-4" />
-                  Pickup Location * 
-                  <span className={`text-xs px-2 py-1 rounded-full ${
+                <label className="flex items-center gap-2 text-black font-bold mb-3 text-lg">
+                  <MapPin className="h-5 w-5 text-yellow-600" />
+                  🚗 Pickup Location * 
+                  <span className={`text-sm px-3 py-1 rounded-full font-bold border-2 ${
                     nextLocationSetting === 'pickup'
-                      ? 'bg-blue-100 text-blue-700 animate-pulse'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-yellow-400 text-black border-black animate-pulse shadow-lg'
+                      : 'bg-green-400 text-black border-green-600'
                   }`}>
-                    🗺️ {nextLocationSetting === 'pickup' ? 'Click map to select' : 'Set via map'}
+                    🗺️ {nextLocationSetting === 'pickup' ? 'CLICK MAP TO SELECT' : 'SET VIA MAP'}
                   </span>
                 </label>
                 <div className="flex gap-2">
                   <input
                     {...register('pickupAddress')}
-                    className="flex-1 p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                    placeholder="Enter address, use GPS, or click map first"
+                    className="flex-1 p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                    placeholder="📍 Enter address, use GPS, or click map first"
                   />
                   <button
                     type="button"
                     onClick={useCurrentLocationForPickup}
                     disabled={!currentLocation}
-                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`px-4 py-3 rounded-lg text-sm font-bold transition-all whitespace-nowrap border-2 shadow-lg ${
                       currentLocation 
-                        ? 'bg-blue-100 hover:bg-blue-200 text-blue-700' 
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'bg-yellow-400 hover:bg-yellow-500 text-black border-black hover:shadow-xl' 
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-400'
                     }`}
                     title={currentLocation ? 'Use your current location' : 'Get your location first'}
                   >
@@ -587,21 +593,21 @@ export function TaxiBookingApp() {
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                  <Navigation className="h-4 w-4" />
-                  Drop-off Location *
-                  <span className={`text-xs px-2 py-1 rounded-full ${
+                <label className="flex items-center gap-2 text-black font-bold mb-3 text-lg">
+                  <Navigation className="h-5 w-5 text-yellow-600" />
+                  🎯 Drop-off Location *
+                  <span className={`text-sm px-3 py-1 rounded-full font-bold border-2 ${
                     nextLocationSetting === 'dropoff'
-                      ? 'bg-red-100 text-red-700 animate-pulse'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-yellow-400 text-black border-black animate-pulse shadow-lg'
+                      : 'bg-green-400 text-black border-green-600'
                   }`}>
-                    🗺️ {nextLocationSetting === 'dropoff' ? 'Click map to select' : 'Click map after pickup'}
+                    🗺️ {nextLocationSetting === 'dropoff' ? 'CLICK MAP TO SELECT' : 'CLICK MAP AFTER PICKUP'}
                   </span>
                 </label>
                 <input
                   {...register('dropoffAddress')}
-                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                  placeholder="Enter destination or click on map after pickup"
+                  className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                  placeholder="🎯 Enter destination or click on map after pickup"
                 />
                 {errors.dropoffAddress && (
                   <p className="text-red-500 text-sm mt-1">{errors.dropoffAddress.message}</p>
@@ -611,14 +617,14 @@ export function TaxiBookingApp() {
               {/* Date and Time */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                    <Calendar className="h-4 w-4" />
-                    Pickup Date *
+                  <label className="flex items-center gap-2 text-black font-bold mb-3">
+                    <Calendar className="h-5 w-5 text-yellow-600" />
+                    📅 Pickup Date *
                   </label>
                   <input
                     {...register('pickupDate')}
                     type="date"
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
                   />
                   {errors.pickupDate && (
                     <p className="text-red-500 text-sm mt-1">{errors.pickupDate.message}</p>
@@ -626,14 +632,14 @@ export function TaxiBookingApp() {
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                    <Clock className="h-4 w-4" />
-                    Pickup Time *
+                  <label className="flex items-center gap-2 text-black font-bold mb-3">
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                    🕰️ Pickup Time *
                   </label>
                   <input
                     {...register('pickupTime')}
                     type="time"
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
                   />
                   {errors.pickupTime && (
                     <p className="text-red-500 text-sm mt-1">{errors.pickupTime.message}</p>
@@ -644,50 +650,50 @@ export function TaxiBookingApp() {
               {/* Ride Details */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                    <Users className="h-4 w-4" />
-                    Passengers
+                  <label className="flex items-center gap-2 text-black font-bold mb-3">
+                    <Users className="h-5 w-5 text-yellow-600" />
+                    👥 Passengers
                   </label>
                   <select
                     {...register('passengers')}
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
                   >
-                    <option value="1">1 Passenger</option>
-                    <option value="2">2 Passengers</option>
-                    <option value="3">3 Passengers</option>
-                    <option value="4">4 Passengers</option>
-                    <option value="5">5+ Passengers</option>
+                    <option value="1">🚶 1 Passenger</option>
+                    <option value="2">🚶‍♀️🚶 2 Passengers</option>
+                    <option value="3">🚶‍♀️🚶🚶‍♂️ 3 Passengers</option>
+                    <option value="4">👨‍👩‍👦‍👦 4 Passengers</option>
+                    <option value="5">👥 5+ Passengers</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                    <Car className="h-4 w-4" />
-                    Car Type
+                  <label className="flex items-center gap-2 text-black font-bold mb-3">
+                    <Car className="h-5 w-5 text-yellow-600" />
+                    🚗 Car Type
                   </label>
                   <select
                     {...register('carType')}
-                    className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
                   >
-                    <option value="economy">Economy</option>
-                    <option value="comfort">Comfort</option>
-                    <option value="premium">Premium</option>
-                    <option value="suv">SUV</option>
+                    <option value="economy">🚕 Economy Taxi</option>
+                    <option value="comfort">🚖 Comfort Taxi</option>
+                    <option value="premium">🚘 Premium Taxi</option>
+                    <option value="suv">🚙 SUV Taxi</option>
                   </select>
                 </div>
               </div>
 
               {/* Special Requests */}
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Special Requests
+                <label className="flex items-center gap-2 text-black font-bold mb-3">
+                  <MessageSquare className="h-5 w-5 text-yellow-600" />
+                  💬 Special Requests
                 </label>
                 <textarea
                   {...register('specialRequests')}
-                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors resize-none"
-                  rows={3}
-                  placeholder="Any special requirements or notes..."
+                  className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all resize-none bg-yellow-50 font-semibold text-black shadow-inner"
+                  rows={4}
+                  placeholder="💬 Any special requirements, accessibility needs, or notes for your taxi ride..."
                 />
               </div>
 
@@ -695,17 +701,17 @@ export function TaxiBookingApp() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:via-yellow-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold py-6 px-8 rounded-xl text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl flex items-center justify-center gap-3 border-4 border-black shadow-xl"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Sending...
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    🚕 BOOKING YOUR TAXI...
                   </>
                 ) : (
                   <>
-                    <Car className="h-5 w-5" />
-                    Book Taxi
+                    <Car className="h-6 w-6" />
+                    🚖 BOOK PROFESSIONAL TAXI NOW
                   </>
                 )}
               </button>
@@ -713,17 +719,17 @@ export function TaxiBookingApp() {
 
             {/* Status Message */}
             {submitStatus !== 'idle' && (
-              <div className={`mt-6 p-4 rounded-lg flex items-center gap-3 ${
+              <div className={`mt-6 p-6 rounded-xl flex items-center gap-4 border-2 shadow-xl ${
                 submitStatus === 'success' 
-                  ? 'bg-green-50 text-green-800 border border-green-200' 
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                  ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-900 border-green-400' 
+                  : 'bg-gradient-to-r from-red-100 to-red-200 text-red-900 border-red-400'
               }`}>
                 {submitStatus === 'success' ? (
-                  <CheckCircle className="h-5 w-5" />
+                  <CheckCircle className="h-6 w-6" />
                 ) : (
-                  <AlertCircle className="h-5 w-5" />
+                  <AlertCircle className="h-6 w-6" />
                 )}
-                <p className="font-medium">{submitMessage}</p>
+                <p className="font-bold text-lg">{submitMessage}</p>
               </div>
             )}
           </div>
@@ -732,7 +738,9 @@ export function TaxiBookingApp() {
 
       {/* Footer */}
       <footer className="text-center mt-8">
-        <p className="text-blue-100">&copy; 2025 AnayaTaxi. All rights reserved.</p>
+        <div className="bg-black rounded-2xl px-6 py-4 inline-block shadow-2xl border-2 border-yellow-400">
+          <p className="text-yellow-400 font-bold">🚕 &copy; 2025 AnayaTaxi - Your Professional Taxi Service. All rights reserved.</p>
+        </div>
       </footer>
     </div>
   );

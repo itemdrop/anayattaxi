@@ -95,34 +95,34 @@ const FreeMap: React.FC<FreeMapProps> = ({
       
       switch (markerData.type) {
         case 'pickup':
-          emoji = '🚗';
-          color = '#3B82F6';
+          emoji = '🚕';
+          color = '#FBBF24'; // Yellow
           break;
         case 'dropoff':
         case 'destination':
-          emoji = '🎯';
-          color = '#EF4444';
+          emoji = '🏁';
+          color = '#1F2937'; // Black
           break;
         case 'current':
           emoji = '📍';
-          color = '#10B981';
+          color = '#FBBF24'; // Yellow
           break;
         case 'demo':
           emoji = '🎭';
-          color = '#8B5CF6';
+          color = '#F59E0B'; // Amber
           break;
         default:
-          emoji = '📍';
-          color = '#6B7280';
+          emoji = '🚖';
+          color = '#FBBF24'; // Yellow
       }
 
-      // Create custom icon with emoji
+      // Create custom taxi-themed icon with emoji
       const icon = L.divIcon({
-        html: `<div style="background: ${color}; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-size: 14px;">${emoji}</div>`,
+        html: `<div style="background: ${color}; color: ${color === '#1F2937' ? '#FBBF24' : '#1F2937'}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid ${color === '#1F2937' ? '#FBBF24' : '#1F2937'}; box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 16px; font-weight: bold;">${emoji}</div>`,
         className: '',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -15]
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+        popupAnchor: [0, -18]
       });
 
       const marker = L.marker([markerData.lat, markerData.lng], { icon })
