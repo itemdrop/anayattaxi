@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Optimized for Vercel deployment
-  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -17,9 +16,6 @@ const nextConfig = {
         hostname: 'cdnjs.cloudflare.com',
       }
     ]
-  },
-  turbopack: {
-    root: '/Users/efan/anayattaxi'
   },
   experimental: {
     optimizePackageImports: ['leaflet']
