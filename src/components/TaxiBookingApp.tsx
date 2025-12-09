@@ -152,21 +152,31 @@ export function TaxiBookingApp() {
 
       setCurrentLocation(locationData);
       setLocationError('');
-      console.log('Location data set:', locationData);
+      console.log('✅ Location data set:', locationData);
 
-      // Update free map center and add marker
+      // Update free map center and add marker - make this more prominent
       setMapCenter([latitude, longitude]);
-      setMapZoom(16);
+      setMapZoom(17); // Closer zoom for better accuracy
       
-      // Add marker to free map
-      setMapMarkers([{
+      // Add marker to free map - replace any existing markers
+      const currentLocationMarker = {
         lat: latitude,
         lng: longitude,
-        title: 'Your Current Location',
-        type: 'current'
-      }]);
+        title: '📍 Your Exact Location',
+        type: 'current' as const
+      };
       
-      console.log('Location set with address:', address);
+      setMapMarkers([currentLocationMarker]);
+      console.log('🗺️ Map centered on user location with marker:', address);
+      
+      // Auto-fill pickup address if empty
+      setTimeout(() => {
+        const currentPickup = document.querySelector('input[name="pickupAddress"]') as HTMLInputElement;
+        if (currentPickup && !currentPickup.value) {
+          setValue('pickupAddress', address);
+          console.log('📋 Auto-filled pickup address from current location');
+        }
+      }, 500);
       
     } catch (error: any) {
       console.error('Geolocation error:', error);
@@ -199,7 +209,13 @@ export function TaxiBookingApp() {
   useEffect(() => {
     // Get location immediately when component mounts
     if (typeof window !== 'undefined' && navigator.geolocation) {
+      console.log('🚕 Component mounted, getting user location...');
       getCurrentLocation();
+    } else {
+      console.log('❌ Geolocation not available');
+      // Set default map center if no geolocation
+      setMapCenter([40.7589, -73.9851]); // New York City default
+      setMapZoom(13);
     }
   }, []);
 
@@ -214,14 +230,20 @@ export function TaxiBookingApp() {
 
   // Reset location selection order
   const resetLocationSelection = () => {
+    console.log('🔄 Resetting location selection');
     setNextLocationSetting('pickup');
-    // Remove pickup and dropoff markers
-    setMapMarkers(prev => prev.filter(marker => 
-      marker.type !== 'pickup' && marker.type !== 'dropoff'
-    ));
+    // Remove pickup and dropoff markers, keep current location
+    setMapMarkers(prev => {
+      const filtered = prev.filter(marker => 
+        marker.type !== 'pickup' && marker.type !== 'dropoff' && marker.type !== 'demo'
+      );
+      console.log('🗺️ Reset markers, keeping:', filtered.map(m => m.type));
+      return filtered;
+    });
     // Clear address fields
-    setValue('pickupAddress', '');
-    setValue('dropoffAddress', '');
+    setValue('pickupAddress', '', { shouldValidate: true });
+    setValue('dropoffAddress', '', { shouldValidate: true });
+    console.log('✅ Location selection reset complete');
   };
 
   // Handle map click to alternate between pickup and dropoff locations
@@ -230,16 +252,18 @@ export function TaxiBookingApp() {
       console.log(`🗺️ Map clicked at: ${lat}, ${lng}`);
       console.log(`🎯 Current nextLocationSetting: ${nextLocationSetting}`);
       
-      const isSettingPickup = nextLocationSetting === 'pickup';
+      // Force ensure we have the correct state
+      const currentSetting = nextLocationSetting;
+      const isSettingPickup = currentSetting === 'pickup';
       const fieldName = isSettingPickup ? 'pickupAddress' : 'dropoffAddress';
       const markerTitle = isSettingPickup ? '🚕 Pickup Location' : '🏁 Dropoff Location';
-      const markerType = nextLocationSetting;
+      const markerType = currentSetting;
       
-      console.log(`📝 Setting field: ${fieldName}`);
+      console.log(`📝 Setting field: ${fieldName} (isPickup: ${isSettingPickup})`);
       console.log(`📍 Marker type: ${markerType}`);
       
       // Show loading state immediately
-      setValue(fieldName, '🔍 Getting address...');
+      setValue(fieldName, '🔍 Getting address...', { shouldValidate: true });
       
       // Get address from coordinates using free geocoding
       let address: string;
@@ -251,8 +275,8 @@ export function TaxiBookingApp() {
         address = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       }
       
-      // Update the address field
-      setValue(fieldName, address);
+      // Update the address field with validation
+      setValue(fieldName, address, { shouldValidate: true, shouldDirty: true });
       console.log(`📋 Form field '${fieldName}' updated with: ${address}`);
       
       // Create new marker
@@ -260,22 +284,30 @@ export function TaxiBookingApp() {
         lat,
         lng,
         title: markerTitle,
-        type: markerType as 'pickup' | 'dropoff' | 'current'
+        type: markerType as 'pickup' | 'dropoff'
       };
       
       // Update markers - keep current location, replace the specific type being set
       setMapMarkers(prev => {
+        // Keep current location and other types, replace only the current setting type
         const filteredMarkers = prev.filter(marker => 
           marker.type !== markerType && marker.type !== 'demo'
         );
         console.log(`🗺️ Adding marker of type '${markerType}' to map`);
+        console.log(`📍 Previous markers:`, prev.map(m => m.type));
+        console.log(`📍 New marker list will have:`, [...filteredMarkers, newMarker].map(m => m.type));
         return [...filteredMarkers, newMarker];
       });
       
-      // Switch to next location type
+      // Switch to next location type - CRITICAL: do this last
       const newNextSetting = isSettingPickup ? 'dropoff' : 'pickup';
+      console.log(`🔄 Switching from '${currentSetting}' to '${newNextSetting}'`);
       setNextLocationSetting(newNextSetting);
-      console.log(`🔄 Switched nextLocationSetting to: ${newNextSetting}`);
+      
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        console.log(`✅ State switched successfully to: ${newNextSetting}`);
+      }, 100);
       
     } catch (error) {
       console.error('❌ Map click handler failed:', error);
