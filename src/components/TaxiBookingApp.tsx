@@ -5,6 +5,7 @@ import emailjs from '@emailjs/browser';
 import FreeMap from './FreeMap';
 import '../styles/leaflet-fixes.css';
 import { FreeLocationService } from '../utils/FreeLocationService';
+import { MalmoStreetService } from '../services/MalmoStreetService';
 import { useForm } from 'react-hook-form';
 import { 
   LocationData, 
@@ -52,16 +53,21 @@ export function TaxiBookingApp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
-  const [mapCenter, setMapCenter] = useState<[number, number]>([37.7749, -122.4194]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([55.6050, 13.0038]);
   const [mapZoom, setMapZoom] = useState(13);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
   const [nextLocationSetting, setNextLocationSetting] = useState<LocationSettingType>('pickup');
   const [isGeocodingLocation, setIsGeocodingLocation] = useState(false);
+  const [streetSuggestions, setStreetSuggestions] = useState<Array<{display_name: string; lat: number; lon: number; address: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState<{pickup: boolean; dropoff: boolean}>({pickup: false, dropoff: false});
+  const [searchingStreets, setSearchingStreets] = useState(false);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors },
     reset
   } = useForm<BookingFormData>({
@@ -87,12 +93,37 @@ export function TaxiBookingApp() {
     setLocationError('🔍 Getting your location...');
     
     try {
+      console.log('🌍 Requesting GPS location with high accuracy...');
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 30000, // Longer timeout for better reliability
-          maximumAge: 300000, // 5 minute cache for faster subsequent loads
-        });
+        const timeoutId = setTimeout(() => {
+          console.log('⏰ GPS timeout - trying with lower accuracy');
+          // Try again with lower accuracy if high accuracy fails
+          navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 60000
+            }
+          );
+        }, 15000);
+        
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            clearTimeout(timeoutId);
+            resolve(pos);
+          },
+          (err) => {
+            clearTimeout(timeoutId);
+            reject(err);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000
+          }
+        );
       });
 
       const { latitude, longitude } = position.coords;
@@ -115,23 +146,14 @@ export function TaxiBookingApp() {
           }
         }
         
-        // Method 2: FREE OpenStreetMap reverse geocoding (no API key needed!)
+        // Method 2: Use our CORS-free geocoding API
         if (!address) {
           try {
-            const osmResponse = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-              {
-                headers: {
-                  'User-Agent': 'AnayaTaxi-App'
-                }
-              }
-            );
-            const osmData = await osmResponse.json();
-            if (osmData && osmData.display_name) {
-              address = osmData.display_name;
-            }
-          } catch (osmError) {
-            console.warn('Free OSM geocoding failed:', osmError);
+            console.log('🌍 Using internal geocoding API for current location...');
+            address = await FreeLocationService.getAddressFromCoords(latitude, longitude);
+            console.log('✅ Internal geocoding successful:', address);
+          } catch (geocodeError) {
+            console.warn('⚠️ Internal geocoding failed:', geocodeError);
           }
         }
         
@@ -170,14 +192,9 @@ export function TaxiBookingApp() {
       setMapMarkers([currentLocationMarker]);
       console.log('🗺️ Map centered on user location with marker:', address);
       
-      // Auto-fill pickup address if empty
-      setTimeout(() => {
-        const currentPickup = document.querySelector('input[name="pickupAddress"]') as HTMLInputElement;
-        if (currentPickup && !currentPickup.value) {
-          setValue('pickupAddress', address);
-          console.log('📋 Auto-filled pickup address from current location');
-        }
-      }, 500);
+      // Auto-fill pickup address with user's location
+      setValue('pickupAddress', address, { shouldValidate: true });
+      console.log('📋 Auto-filled pickup address from current location');
       
     } catch (error: any) {
       console.error('Geolocation error:', error);
@@ -206,27 +223,178 @@ export function TaxiBookingApp() {
     }
   };
 
-  // Auto-get location on component mount - immediate for better UX
+  // Auto-get location on component mount with improved detection
   useEffect(() => {
-    // Get location immediately when component mounts
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      console.log('🚕 Component mounted, getting user location...');
-      getCurrentLocation();
-    } else {
-      console.log('❌ Geolocation not available');
-      // Set default map center if no geolocation
-      setMapCenter([40.7589, -73.9851]); // New York City default
-      setMapZoom(13);
-    }
+    let isComponentMounted = true;
+    
+    const initializeLocation = async () => {
+      if (typeof window !== 'undefined' && navigator.geolocation) {
+        console.log('🚕 Component mounted, getting user location...');
+        
+        // Check if location permission is already granted
+        if ('permissions' in navigator) {
+          try {
+            const permission = await navigator.permissions.query({ name: 'geolocation' });
+            console.log('📍 Geolocation permission status:', permission.state);
+            
+            if (permission.state === 'granted' && isComponentMounted) {
+              getCurrentLocation();
+            } else if (permission.state === 'prompt' && isComponentMounted) {
+              // Prompt user for location
+              getCurrentLocation();
+            } else {
+              console.log('⚠️ Location permission denied, using default center');
+              if (isComponentMounted) {
+                setMapCenter([55.6050, 13.0038]); // Malmö, Sweden default
+                setMapZoom(13);
+              }
+            }
+          } catch (permError) {
+            console.log('📍 Permission API not available, trying direct location access');
+            if (isComponentMounted) {
+              getCurrentLocation();
+            }
+          }
+        } else {
+          // Fallback for browsers without permissions API
+          if (isComponentMounted) {
+            getCurrentLocation();
+          }
+        }
+      } else {
+        console.log('❌ Geolocation not available');
+        if (isComponentMounted) {
+          setMapCenter([55.6050, 13.0038]); // Malmö, Sweden default
+          setMapZoom(13);
+        }
+      }
+    };
+    
+    initializeLocation();
+    
+    return () => {
+      isComponentMounted = false;
+    };
   }, []);
 
+  // Auto-center map when current location is detected
+  useEffect(() => {
+    if (currentLocation) {
+      console.log('🗺️ Auto-centering map on user location:', currentLocation.address);
+      setMapCenter([currentLocation.lat, currentLocation.lng]);
+      setMapZoom(15); // Closer zoom for user location
+      
+      // Auto-fill pickup address if it's empty
+      const currentPickupAddress = getValues('pickupAddress');
+      if (!currentPickupAddress || currentPickupAddress.trim() === '') {
+        console.log('📍 Auto-filling pickup address with current location');
+        setValue('pickupAddress', currentLocation.address);
+      }
+    }
+  }, [currentLocation, setValue, getValues]);
 
+  // Aggressively request location on mount
+  useEffect(() => {
+    let mounted = true;
+    
+    const requestLocationOnMount = async () => {
+      // Wait a bit for page to fully load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (mounted && !currentLocation && navigator.geolocation) {
+        console.log('🚕 Auto-requesting location on page load...');
+        try {
+          await getCurrentLocation();
+        } catch (error) {
+          console.log('⚠️ Auto location request failed, user can click button');
+        }
+      }
+    };
+    
+    requestLocationOnMount();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Hide suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowSuggestions({pickup: false, dropoff: false});
+      setStreetSuggestions([]);
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Use current location for pickup
   const useCurrentLocationForPickup = () => {
     if (currentLocation) {
       setValue('pickupAddress', currentLocation.address);
     }
+  };
+
+  // Search for street suggestions in Malmö
+  const searchStreets = async (query: string, field: 'pickup' | 'dropoff') => {
+    if (!query || query.length < 2) {
+      setStreetSuggestions([]);
+      setShowSuggestions(prev => ({...prev, [field]: false}));
+      return;
+    }
+
+    try {
+      setSearchingStreets(true);
+      const suggestions = await MalmoStreetService.searchStreets(query);
+      setStreetSuggestions(suggestions);
+      setShowSuggestions(prev => ({...prev, [field]: suggestions.length > 0}));
+    } catch (error) {
+      console.error('Street search failed:', error);
+      setStreetSuggestions([]);
+      setShowSuggestions(prev => ({...prev, [field]: false}));
+    } finally {
+      setSearchingStreets(false);
+    }
+  };
+
+  // Handle suggestion selection
+  const selectStreetSuggestion = (suggestion: any, field: 'pickup' | 'dropoff') => {
+    const address = MalmoStreetService.formatMalmoAddress(suggestion.address);
+    setValue(field === 'pickup' ? 'pickupAddress' : 'dropoffAddress', address);
+    
+    // Add marker to map
+    const markerTitle = field === 'pickup' ? '🚕 Pickup Location' : '🏁 Dropoff Location';
+    const newMarker = {
+      lat: suggestion.lat,
+      lng: suggestion.lon,
+      title: markerTitle,
+      type: field
+    };
+    
+    setMapMarkers(prev => {
+      const filtered = prev.filter(marker => marker.type !== field && marker.type !== 'demo');
+      return [...filtered, newMarker];
+    });
+    
+    // Center map on selected location
+    setMapCenter([suggestion.lat, suggestion.lon]);
+    setMapZoom(16);
+    
+    // Hide suggestions
+    setShowSuggestions(prev => ({...prev, [field]: false}));
+    setStreetSuggestions([]);
+  };
+
+  // Debounce street search
+  const handleAddressChange = (value: string, field: 'pickup' | 'dropoff') => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    
+    debounceTimeout.current = setTimeout(() => {
+      searchStreets(value, field);
+    }, 300);
   };
 
   // Reset location selection order
@@ -252,6 +420,9 @@ export function TaxiBookingApp() {
     try {
       console.log(`🗺️ Map clicked at: ${lat}, ${lng}`);
       console.log(`🎯 Current nextLocationSetting: ${nextLocationSetting}`);
+      
+      // Prevent double-clicks and ensure state is ready
+      setIsGeocodingLocation(true);
       
       // Force ensure we have the correct state
       const currentSetting = nextLocationSetting;
@@ -314,15 +485,20 @@ export function TaxiBookingApp() {
         return [...filteredMarkers, newMarker];
       });
       
-      // Switch to next location type - CRITICAL: do this last
+      // Switch to next location type immediately for better UX
       const newNextSetting = isSettingPickup ? 'dropoff' : 'pickup';
       console.log(`🔄 Switching from '${currentSetting}' to '${newNextSetting}'`);
-      setNextLocationSetting(newNextSetting);
       
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        console.log(`✅ State switched successfully to: ${newNextSetting}`);
-      }, 100);
+      // Update state immediately with better feedback
+      setNextLocationSetting(newNextSetting);
+      console.log(`✅ State switched successfully to: ${newNextSetting}`);
+      
+      // Show user feedback for successful click
+      if (isSettingPickup) {
+        console.log('🚕 Pickup location set! Now click for dropoff.');
+      } else {
+        console.log('🏁 Dropoff location set! Ready to book.');
+      }
       
     } catch (error) {
       console.error('❌ Map click handler failed:', error);
@@ -484,7 +660,17 @@ export function TaxiBookingApp() {
                 </span>
               </div>
               
-              {locationError ? (
+              {isGeocodingLocation ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <div>
+                      <p className="text-sm font-medium">🔍 Getting address from map location...</p>
+                      <p className="text-xs text-blue-600 mt-1">Please wait while we convert coordinates to address</p>
+                    </div>
+                  </div>
+                </div>
+              ) : locationError ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                   <div className="flex items-start gap-2 text-red-800">
                     <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
@@ -613,15 +799,43 @@ export function TaxiBookingApp() {
                       ? 'bg-yellow-400 text-black border-black animate-pulse shadow-lg'
                       : 'bg-green-400 text-black border-green-600'
                   }`}>
-                    🗺️ {nextLocationSetting === 'pickup' ? 'CLICK MAP TO SELECT' : 'SET VIA MAP'}
+                    {nextLocationSetting === 'pickup' 
+                      ? '👆 STEP 1: CLICK MAP FOR PICKUP' 
+                      : '✅ PICKUP SET - USE GPS OR TYPE BELOW'}
                   </span>
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    {...register('pickupAddress')}
-                    className="flex-1 p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
-                    placeholder="📍 Enter address, use GPS, or click map first"
-                  />
+                <div className="flex gap-2 relative">
+                  <div className="flex-1 relative">
+                    <input
+                      {...register('pickupAddress')}
+                      className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                      placeholder="📍 Start typing Malmö street name..."
+                      onChange={(e) => {
+                        register('pickupAddress').onChange(e);
+                        handleAddressChange(e.target.value, 'pickup');
+                      }}
+                      onFocus={() => {
+                        const value = getValues('pickupAddress');
+                        if (value && value.length >= 2) {
+                          searchStreets(value, 'pickup');
+                        }
+                      }}
+                    />
+                    {showSuggestions.pickup && streetSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full bg-white border-2 border-yellow-400 rounded-lg mt-1 shadow-xl max-h-60 overflow-y-auto">
+                        {streetSuggestions.map((suggestion, index) => (
+                          <div
+                            key={index}
+                            className="p-3 hover:bg-yellow-100 cursor-pointer border-b border-yellow-200 text-sm"
+                            onClick={() => selectStreetSuggestion(suggestion, 'pickup')}
+                          >
+                            <div className="font-semibold text-black">📍 {suggestion.address}</div>
+                            <div className="text-gray-600 text-xs">{suggestion.display_name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={useCurrentLocationForPickup}
@@ -654,16 +868,44 @@ export function TaxiBookingApp() {
                   <span className={`text-sm px-3 py-1 rounded-full font-bold border-2 ${
                     nextLocationSetting === 'dropoff'
                       ? 'bg-yellow-400 text-black border-black animate-pulse shadow-lg'
-                      : 'bg-green-400 text-black border-green-600'
+                      : 'bg-gray-300 text-gray-600 border-gray-400'
                   }`}>
-                    🗺️ {nextLocationSetting === 'dropoff' ? 'CLICK MAP TO SELECT' : 'CLICK MAP AFTER PICKUP'}
+                    {nextLocationSetting === 'dropoff' 
+                      ? '👆 STEP 2: CLICK MAP FOR DROPOFF' 
+                      : '⏳ WAITING FOR PICKUP FIRST'}
                   </span>
                 </label>
-                <input
-                  {...register('dropoffAddress')}
-                  className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
-                  placeholder="🎯 Enter destination or click on map after pickup"
-                />
+                <div className="relative">
+                  <input
+                    {...register('dropoffAddress')}
+                    className="w-full p-4 border-2 border-yellow-400 rounded-lg focus:border-black focus:outline-none transition-all bg-yellow-50 font-semibold text-black shadow-inner"
+                    placeholder="🎯 Start typing Malmö destination..."
+                    onChange={(e) => {
+                      register('dropoffAddress').onChange(e);
+                      handleAddressChange(e.target.value, 'dropoff');
+                    }}
+                    onFocus={() => {
+                      const value = getValues('dropoffAddress');
+                      if (value && value.length >= 2) {
+                        searchStreets(value, 'dropoff');
+                      }
+                    }}
+                  />
+                  {showSuggestions.dropoff && streetSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full bg-white border-2 border-yellow-400 rounded-lg mt-1 shadow-xl max-h-60 overflow-y-auto">
+                      {streetSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="p-3 hover:bg-yellow-100 cursor-pointer border-b border-yellow-200 text-sm"
+                          onClick={() => selectStreetSuggestion(suggestion, 'dropoff')}
+                        >
+                          <div className="font-semibold text-black">🎯 {suggestion.address}</div>
+                          <div className="text-gray-600 text-xs">{suggestion.display_name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {errors.dropoffAddress && (
                   <p className="text-red-500 text-sm mt-1">{errors.dropoffAddress.message}</p>
                 )}
