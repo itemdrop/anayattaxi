@@ -1,24 +1,39 @@
-// Free OpenStreetMap alternative for AnayaTaxi
-// This can replace Google Maps entirely with zero cost
+// Free geocoding service for AnayaTaxi using server-side proxy
+// This avoids CORS issues and provides backup geocoding services
 
 export class FreeLocationService {
-  // Free reverse geocoding using OpenStreetMap Nominatim API
+  // Reverse geocoding using our Next.js API endpoint (server-side proxy)
   static async getAddressFromCoords(lat: number, lng: number): Promise<string> {
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'AnayaTaxi-App'
-          }
-        }
-      );
+      console.log(`🔍 Requesting address for: ${lat}, ${lng}`);
+      
+      // Use our API endpoint instead of direct external calls to avoid CORS
+      const response = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add timeout for client-side request
+        signal: AbortSignal.timeout(12000)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
       const data = await response.json();
-      return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      
+      if (data.success && data.address) {
+        console.log(`✅ Address resolved: ${data.address}`);
+        return data.address;
+      } else {
+        console.warn('⚠️ API returned unsuccessful response:', data);
+        return `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
     } catch (error) {
-      console.error('Free geocoding failed:', error);
-      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      console.error('❌ Geocoding service failed:', error);
+      // Return coordinates as fallback
+      return `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     }
   }
 

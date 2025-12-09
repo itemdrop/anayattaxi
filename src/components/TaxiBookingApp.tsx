@@ -56,6 +56,7 @@ export function TaxiBookingApp() {
   const [mapZoom, setMapZoom] = useState(13);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
   const [nextLocationSetting, setNextLocationSetting] = useState<LocationSettingType>('pickup');
+  const [isGeocodingLocation, setIsGeocodingLocation] = useState(false);
 
   const {
     register,
@@ -262,17 +263,31 @@ export function TaxiBookingApp() {
       console.log(`📝 Setting field: ${fieldName} (isPickup: ${isSettingPickup})`);
       console.log(`📍 Marker type: ${markerType}`);
       
-      // Show loading state immediately
+      // Show loading state immediately with better UX
+      setIsGeocodingLocation(true);
       setValue(fieldName, '🔍 Getting address...', { shouldValidate: true });
       
-      // Get address from coordinates using free geocoding
+      // Get address from coordinates using our improved geocoding service
       let address: string;
       try {
+        console.log(`🌍 Calling geocoding service for ${markerType}...`);
         address = await FreeLocationService.getAddressFromCoords(lat, lng);
-        console.log(`✅ Address resolved: ${address}`);
+        console.log(`✅ Address resolved for ${markerType}: ${address}`);
+        
+        // Provide user feedback for successful geocoding
+        if (address && !address.startsWith('📍')) {
+          console.log(`🎯 Successfully geocoded ${markerType} location`);
+        }
       } catch (geocodingError) {
-        console.error('Geocoding failed, using coordinates:', geocodingError);
+        console.error(`❌ Geocoding failed for ${markerType}:`, geocodingError);
         address = `📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        
+        // Show user-friendly error in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`⚠️ Using coordinates as fallback for ${markerType}`);
+        }
+      } finally {
+        setIsGeocodingLocation(false);
       }
       
       // Update the address field with validation
